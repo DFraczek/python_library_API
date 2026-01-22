@@ -18,5 +18,4 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Rejestracja głównego routera (który zawiera już w sobie Authors, Books, WebSocket i Views)
 app.include_router(api_router)
