@@ -20,7 +20,7 @@ class Review(Base):
     id = Column(Integer, primary_key=True, index=True)
     rating = Column(Integer, nullable=False)
     comment = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC))
 
     book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
 

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
+from pydantic import ConfigDict
 
 class GenreBase(BaseModel):
     """
@@ -19,8 +20,7 @@ class GenreSchema(GenreBase):
     """
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class GenreWithBooks(GenreSchema):
     """

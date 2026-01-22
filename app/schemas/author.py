@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from pydantic import ConfigDict
 
 class AuthorBase(BaseModel):
     """
@@ -21,5 +22,4 @@ class AuthorSchema(AuthorBase):
     """
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
