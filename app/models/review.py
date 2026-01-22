@@ -22,6 +22,6 @@ class Review(Base):
     comment = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"))
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"), nullable=False)
 
     book = relationship("Book", back_populates="reviews")
