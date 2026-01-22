@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Annotated
 
 from app.core.database import get_db
-from app.models.book import Book
-from app.models.review import Review
+from app.models import Book
+from app.models import Review
 from app.schemas.review import ReviewSchema, ReviewCreate
 from app.crud import review as crud_review
 

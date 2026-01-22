@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.genre import Genre
+from app.models import Genre
 from app.schemas.genre import GenreCreate
 
 def get_genre(db: Session, genre_id: int) -> Genre:

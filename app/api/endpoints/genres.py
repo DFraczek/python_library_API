@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Annotated
 
 from app.core.database import get_db
-from app.models.genre import Genre
-from app.models.book import Book
+from app.models import Genre
+from app.models import Book
 from app.schemas.genre import GenreSchema, GenreCreate
 from app.crud import genre as crud_genre
 

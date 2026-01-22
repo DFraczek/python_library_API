@@ -8,7 +8,7 @@ engine = create_engine(
 )
 
 @event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_connection):
+def set_sqlite_pragma(dbapi_connection, connection_record):
     """
     Włącza obsługę kluczy obcych w SQLite przy każdym nowym połączeniu.
     """

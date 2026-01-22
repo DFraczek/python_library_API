@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.book import Book
+from app.models import Book
 from app.schemas.book import BookCreate
 
 def get_book(db: Session, book_id: int) -> Book:

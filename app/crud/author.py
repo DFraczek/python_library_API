@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.author import Author
+from app.models import Author
 from app.schemas.author import AuthorCreate
 
 def get_author(db: Session, author_id: int) -> Author:

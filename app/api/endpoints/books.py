@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List, Annotated
 
 from app.core.database import get_db
-from app.models.book import Book
-from app.models.genre import Genre
-from app.models.author import Author
+from app.models import Book
+from app.models import Genre
+from app.models import Author
 from app.schemas.book import BookSchema, BookCreate
 from app.crud import book as crud_book
 

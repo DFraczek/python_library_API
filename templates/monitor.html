@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monioring Serwera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-8">
+    <div class="bg-white p-16 rounded-3xl shadow-2xl w-full max-w-5xl">
+        <h1 class="text-5xl font-extrabold text-gray-800 mb-12 text-center">Status Serwera</h1>
+
+        <div class="space-y-10">
+            <div class="flex justify-between items-center p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                <span class="text-gray-600 text-2xl font-medium">Status Systemu:</span>
+                <span id="status" class="px-8 py-3 rounded-full text-lg font-bold bg-yellow-100 text-yellow-700 transition-all duration-500">
+                    Łączenie...
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div class="md:col-span-2 p-8 border rounded-2xl bg-blue-50 border-blue-100 text-center">
+                    <p class="text-blue-600 font-semibold text-lg mb-2">Ostatnia synchronizacja danych:</p>
+                    <p id="timestamp" class="text-blue-900 font-mono text-3xl font-bold">---</p>
+                </div>
+
+                <div class="p-12 border rounded-2xl bg-white shadow-sm flex flex-col items-center justify-center border-gray-100">
+                    <p class="text-gray-400 uppercase text-sm font-black tracking-widest mb-4">Obciążenie CPU</p>
+                    <p id="cpu" class="text-7xl font-black text-indigo-600 tabular-nums">0%</p>
+                    <div class="w-full bg-gray-100 h-4 mt-8 rounded-full overflow-hidden">
+                        <div id="cpu-bar" class="bg-indigo-500 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="p-12 border rounded-2xl bg-white shadow-sm flex flex-col items-center justify-center border-gray-100">
+                    <p class="text-gray-400 uppercase text-sm font-black tracking-widest mb-4">Użycie Pamięci RAM</p>
+                    <p id="ram" class="text-7xl font-black text-green-600 tabular-nums">0%</p>
+                    <div class="w-full bg-gray-100 h-4 mt-8 rounded-full overflow-hidden">
+                        <div id="ram-bar" class="bg-green-500 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="mt-12 text-center text-gray-400 text-sm italic">Dane aktualizowane automatycznie co 5 sekund</p>
+    </div>
+
+    <script>
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/status`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = data.status.toUpperCase();
+            statusEl.className = "px-8 py-3 rounded-full text-lg font-bold bg-green-100 text-green-700";
+
+            const date = new Date(data.timestamp);
+            document.getElementById('timestamp').innerText = date.toLocaleString('pl-PL');
+
+            const cpuVal = data.cpu_usage.replace('%', '');
+            document.getElementById('cpu').innerText = data.cpu_usage;
+            document.getElementById('cpu-bar').style.width = cpuVal + "%";
+
+            const ramVal = data.ram_usage.replace('%', '');
+            document.getElementById('ram').innerText = data.ram_usage;
+            document.getElementById('ram-bar').style.width = ramVal + "%";
+        };
+
+        ws.onerror = function(err) {
+            console.error("Błąd WebSocket: ", err);
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = "BŁĄD POŁĄCZENIA";
+            statusEl.className = "px-8 py-3 rounded-full text-lg font-bold bg-red-100 text-red-700";
+        };
+
+        ws.onclose = function() {
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = "ROZŁĄCZONO";
+            statusEl.className = "px-8 py-3 rounded-full text-lg font-bold bg-red-100 text-red-700";
+        };
+    </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Annotated
-from app.models.book import Book
-from app.models.author import Author
+from app.models import Book
+from app.models import Author
 
 from app.core.database import get_db
 from app.schemas.author import AuthorSchema, AuthorCreate

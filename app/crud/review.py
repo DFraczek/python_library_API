@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.review import Review
+from app.models import Review
 from app.schemas.review import ReviewCreate
 
 def get_review(db: Session, review_id: int) -> Review:
