@@ -62,7 +62,7 @@ Po uruchomieniu aplikacja będzie dostępna pod adresem: http://127.0.0.1:8000
 ## Testy
 Projekt zawiera zestaw testów jednostkowych weryfikujących poprawność działania CRUD, relacji w bazie danych oraz walidacji modeli Pydantic. Aby je uruchomić, wpisz:
 ```bash
-  python -m pytest -v
+  pytest
 ```
 
 ---
