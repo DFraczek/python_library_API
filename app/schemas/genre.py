@@ -1,30 +1,29 @@
-from pydantic import BaseModel
 from typing import List
-from pydantic import ConfigDict
+
+from pydantic import BaseModel, ConfigDict
+
 
 class GenreBase(BaseModel):
-    """
-    Podstawowy schemat gatunku, zawierający jego nazwę.
-    """
+    """Base schema for a genre, containing its name."""
+
     name: str
 
+
 class GenreCreate(GenreBase):
-    """
-    Schemat używany przy tworzeniu nowego gatunku.
-    """
+    """Schema used to create a new genre."""
+
     pass
 
+
 class GenreSchema(GenreBase):
-    """
-    Pełny schemat gatunku zwracany przez API.
-    """
+    """Schema representing a genre returned by the API."""
+
     id: int
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class GenreWithBooks(GenreSchema):
-    """
-    Rozszerzony schemat gatunku, który oprócz podstawowych danych
-    zawiera również listę przypisanych do niego książek.
-    """
+    """Extended genre schema that includes its associated books."""
+
     books: List["BookSchema"] = []

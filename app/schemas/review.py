@@ -1,26 +1,32 @@
-from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
-from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class ReviewBase(BaseModel):
-    """
-    Podstawowy schemat recenzji zawierający ocenę, komentarz oraz powiązanie z książką.
-    """
-    rating: int = Field(..., ge=1, le=5, description="Ocena w skali od 1 do 5")
-    comment: Optional[str] = Field(None, description="Opcjonalny komentarz do oceny")
+    """Base schema for a book review."""
+    rating: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description="Rating on a scale from 1 to 5",
+    )
+    comment: str | None = Field(
+        None,
+        description="Optional review comment",
+    )
     book_id: int
 
+
 class ReviewCreate(ReviewBase):
-    """
-    Schemat używany przy tworzeniu nowej recenzji.
-    """
+    """Schema used to create a new review."""
     pass
 
+
 class ReviewSchema(ReviewBase):
-    """
-    Pełny schemat recenzji zwracany przez API.
-    """
+    """Complete review schema returned by the API."""
     id: int
+    user_id: int
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,21 +1,27 @@
+import app.models
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+
 from app.api.endpoints import api_router
-from app.core.database import Base, engine
+from app.core.database import Base, engine, SessionLocal
+from app.crud.role import create_default_roles
 
 Base.metadata.create_all(bind=engine)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    with SessionLocal() as db:
+        create_default_roles(db)
+
     print("\n======================")
-    print(f"Dokumentacja: http://127.0.0.1:8000/docs")
-    print(f"Monitoring:   http://127.0.0.1:8000/monitor")
+    print("Dokumentacja: http://127.0.0.1:8000/docs")
+    print("Monitoring:   http://127.0.0.1:8000/monitor")
     print("======================\n")
+
     yield
 
-app = FastAPI(
-    title="Library API",
-    lifespan=lifespan
-)
 
+app = FastAPI(title="Library API", lifespan=lifespan)
 app.include_router(api_router)
