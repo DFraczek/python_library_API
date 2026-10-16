@@ -3,33 +3,38 @@ from sqlalchemy.orm import Session
 from typing import List, Annotated
 
 from app.core.database import get_db
-from app.models import Book
-from app.models import Genre
-from app.models import Author
+from app.core.dependencies import require_admin
+from app.models import Book, Genre, Author
 from app.schemas.book import BookSchema, BookCreate
 from app.crud import book as crud_book
 
 router = APIRouter()
 
-@router.post("/", response_model=BookSchema, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/",
+    response_model=BookSchema,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)],
+)
 def create_book(
-        book: BookCreate,
-        db: Annotated[Session, Depends(get_db)]
+    book: BookCreate,
+    db: Annotated[Session, Depends(get_db)],
 ) -> Book:
     """
-    Dodaje nową książkę do bazy danych.
-    Sprawdza, czy autor i gatunek o danym ID istnieją w bazie.
+    Add a new book to the database.
+    Check whether the specified author and genre exist.
     """
     if not db.get(Author, book.author_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Autor o ID {book.author_id} nie istnieje"
+            detail=f"Author with ID {book.author_id} does not exist",
         )
 
     if not db.get(Genre, book.genre_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Gatunek o ID {book.genre_id} nie istnieje"
+            detail=f"Genre with ID {book.genre_id} does not exist",
         )
 
     return crud_book.create_book(db=db, book_in=book)
@@ -37,69 +42,87 @@ def create_book(
 
 @router.get("/", response_model=List[BookSchema])
 def get_books(db: Annotated[Session, Depends(get_db)]) -> List[Book]:
-    """Pobiera listę wszystkich książek."""
+    """Retrieve all books."""
     return crud_book.get_books(db)
 
 
 @router.get("/{book_id}", response_model=BookSchema)
-def get_book(book_id: int, db: Annotated[Session, Depends(get_db)]) -> Book:
+def get_book(
+    book_id: int,
+    db: Annotated[Session, Depends(get_db)],
+) -> Book:
     """
-    Pobiera dane książki na podstawie jej ID.
-    Zwraca błąd, jeżeli książka o danym ID nie istnieje.`
+    Retrieve a book by its ID.
+    Raise an error if the book does not exist.
     """
     db_book = crud_book.get_book(db, book_id)
+
     if not db_book:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Książka o podanym ID nie istnieje"
+            detail="Book with the specified ID does not exist",
         )
+
     return db_book
 
 
-@router.delete("/{book_id}")
-def delete_book(book_id: int, db: Annotated[Session, Depends(get_db)]) -> dict:
+@router.delete(
+    "/{book_id}",
+    dependencies=[Depends(require_admin)],
+)
+def delete_book(
+    book_id: int,
+    db: Annotated[Session, Depends(get_db)],
+) -> dict:
     """
-    Usuwa książkę o danym ID.
-    Zwraca błąd, jeżeli książka o danym ID nie istnieje.
+    Delete a book by its ID.
+    Raise an error if the book does not exist.
     """
     db_book = crud_book.get_book(db, book_id)
+
     if not db_book:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Książka o podanym ID nie istnieje"
+            detail="Book with the specified ID does not exist",
         )
 
     crud_book.delete_book(db=db, db_book=db_book)
-    return {"message": f"Książka o ID {book_id} została usunięta"}
+
+    return {"message": f"Book with ID {book_id} has been deleted"}
 
 
-@router.put("/{book_id}", response_model=BookSchema)
+@router.put(
+    "/{book_id}",
+    response_model=BookSchema,
+    dependencies=[Depends(require_admin)],
+)
 def update_book(
-        book_id: int,
-        book_in: BookCreate,
-        db: Annotated[Session, Depends(get_db)]
+    book_id: int,
+    book_in: BookCreate,
+    db: Annotated[Session, Depends(get_db)],
 ) -> Book:
     """
-    Aktualizuje dane książki.
-    Zwraca błąd, jeżeli książka, autor lub gatunek o danym ID nie istnieją.
+    Update a book's details.
+    Raise an error if the book, author, or genre does not exist.
     """
     db_book = crud_book.get_book(db, book_id)
+
     if not db_book:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Książka o podanym ID nie istnieje"
+            detail="Book with the specified ID does not exist",
         )
 
     if not db.get(Author, book_in.author_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Autor o ID {book_in.author_id} nie istnieje"
+            detail=f"Author with ID {book_in.author_id} does not exist",
         )
 
     if not db.get(Genre, book_in.genre_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Gatunek o ID {book_in.genre_id} nie istnieje"
+            detail=f"Genre with ID {book_in.genre_id} does not exist",
         )
 
     return crud_book.update_book(db=db, db_book=db_book, book_in=book_in)

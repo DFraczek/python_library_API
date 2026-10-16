@@ -1,17 +1,18 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
+
 from app.core.database import Base
 
 
 class Genre(Base):
-    """
-    Model reprezentujący gatunek literacki.
+    """SQLAlchemy model representing a literary genre.
 
     Attributes:
-        id (int): Unikalny identyfikator gatunku.
-        name (str): Unikalna nazwa gatunku.
-        books (List[Book]): Relacja do książek przypisanych do tego gatunku.
+        id (int): Unique identifier of the genre.
+        name (str): Unique name of the genre.
+        books (List[Book]): Relationship to books assigned to this genre.
     """
+
     __tablename__ = "genres"
 
     id = Column(Integer, primary_key=True, index=True)

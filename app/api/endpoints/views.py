@@ -11,6 +11,6 @@ router = APIRouter()
 @router.get("/monitor", response_class=HTMLResponse)
 async def get_monitor(request: Request):
     """
-    Endpoint zwracający stronę HTML do monitoringu serwera.
+    Endpoint that returns an HTML page for server monitoring.
     """
     return templates.TemplateResponse("monitor.html", {"request": request})

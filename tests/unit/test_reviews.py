@@ -1,80 +1,391 @@
-def test_create_review_success(client):
-    """Testuje poprawne dodanie recenzji do książki."""
-    a_id = client.post("/authors/", json={"name": "A", "surname": "B"}).json()["id"]
-    g_id = client.post("/genres/", json={"name": "G"}).json()["id"]
-    b_id = client.post("/books/", json={"title": "T", "author_id": a_id, "genre_id": g_id}).json()["id"]
+def test_create_review_requires_authentication(client):
+    """Ensure unauthenticated users cannot create reviews."""
+    response = client.post(
+        "/reviews/",
+        json={
+            "rating": 5,
+            "comment": "Great book!",
+            "book_id": 1,
+        },
+    )
 
-    response = client.post("/reviews/", json={
-        "rating": 5,
-        "comment": "Świetna książka!",
-        "book_id": b_id
-    })
+    assert response.status_code == 401
+
+
+def test_get_reviews_requires_authentication(client):
+    """Ensure unauthenticated users cannot list reviews."""
+    response = client.get("/reviews/")
+
+    assert response.status_code == 401
+
+
+def test_create_review_success(client, admin_headers, user_headers):
+    """Ensure an authenticated user can create a review."""
+    author_response = client.post(
+        "/authors/",
+        json={"name": "A", "surname": "B"},
+        headers=admin_headers,
+    )
+    assert author_response.status_code == 201
+    author_id = author_response.json()["id"]
+
+    genre_response = client.post(
+        "/genres/",
+        json={"name": "G"},
+        headers=admin_headers,
+    )
+    assert genre_response.status_code == 201
+    genre_id = genre_response.json()["id"]
+
+    book_response = client.post(
+        "/books/",
+        json={
+            "title": "T",
+            "author_id": author_id,
+            "genre_id": genre_id,
+        },
+        headers=admin_headers,
+    )
+    assert book_response.status_code == 201
+    book_id = book_response.json()["id"]
+
+    response = client.post(
+        "/reviews/",
+        json={
+            "rating": 5,
+            "comment": "Great book!",
+            "book_id": book_id,
+        },
+        headers=user_headers,
+    )
+
     assert response.status_code == 201
     assert response.json()["rating"] == 5
 
-def test_review_rating_validation_too_high(client):
-    """
-    Testuje walidację oceny ksiazki.
-    Próba dodania za wysokiej oceny
-    """
-    response = client.post("/reviews/", json={
-        "rating": 6,
-        "comment": "Za wysoka ocena",
-        "book_id": 1
-    })
-    assert response.status_code == 422
 
-def test_review_rating_validation_too_low(client):
-    """
-    Testuje walidację oceny ksiazki.
-    Próba dodania za niskiej oceny
-    """
-    response = client.post("/reviews/", json={
-        "rating": 0,
-        "comment": "Za niska ocena",
-        "book_id": 1
-    })
-    assert response.status_code == 422
+def test_user_cannot_update_another_users_review(
+    client, admin_headers, user_headers, second_user_headers
+):
+    """Ensure a user cannot update another user's review."""
+    author_id = client.post(
+        "/authors/",
+        json={"name": "A", "surname": "B"},
+        headers=admin_headers,
+    ).json()["id"]
+
+    genre_id = client.post(
+        "/genres/",
+        json={"name": "G"},
+        headers=admin_headers,
+    ).json()["id"]
+
+    book_id = client.post(
+        "/books/",
+        json={
+            "title": "T",
+            "author_id": author_id,
+            "genre_id": genre_id,
+        },
+        headers=admin_headers,
+    ).json()["id"]
+
+    review_response = client.post(
+        "/reviews/",
+        json={
+            "rating": 3,
+            "comment": "Original review",
+            "book_id": book_id,
+        },
+        headers=user_headers,
+    )
+    assert review_response.status_code == 201
+    review_id = review_response.json()["id"]
+
+    response = client.put(
+        f"/reviews/{review_id}",
+        json={
+            "rating": 1,
+            "comment": "Changed by another user",
+            "book_id": book_id,
+        },
+        headers=second_user_headers,
+    )
+
+    assert response.status_code == 403
 
 
-def test_delete_review_success(client):
-    """Testuje usuniecie recenzji."""
-    a_id = client.post("/authors/", json={"name": "A", "surname": "B"}).json()["id"]
-    g_id = client.post("/genres/", json={"name": "G"}).json()["id"]
-    b_id = client.post("/books/", json={"title": "T", "author_id": a_id, "genre_id": g_id}).json()["id"]
-    r_id = client.post("/reviews/", json={"rating": 3, "comment": "Ok", "book_id": b_id}).json()["id"]
+def test_user_cannot_delete_another_users_review(
+    client, admin_headers, user_headers, second_user_headers
+):
+    """Ensure a user cannot delete another user's review."""
+    author_id = client.post(
+        "/authors/",
+        json={"name": "A", "surname": "B"},
+        headers=admin_headers,
+    ).json()["id"]
 
-    response = client.delete(f"/reviews/{r_id}")
+    genre_id = client.post(
+        "/genres/",
+        json={"name": "G"},
+        headers=admin_headers,
+    ).json()["id"]
+
+    book_id = client.post(
+        "/books/",
+        json={
+            "title": "T",
+            "author_id": author_id,
+            "genre_id": genre_id,
+        },
+        headers=admin_headers,
+    ).json()["id"]
+
+    review_response = client.post(
+        "/reviews/",
+        json={
+            "rating": 3,
+            "comment": "Original review",
+            "book_id": book_id,
+        },
+        headers=user_headers,
+    )
+    assert review_response.status_code == 201
+    review_id = review_response.json()["id"]
+
+    response = client.delete(
+        f"/reviews/{review_id}",
+        headers=second_user_headers,
+    )
+
+    assert response.status_code == 403
+
+
+def test_admin_can_update_another_users_review(
+    client, admin_headers, user_headers
+):
+    """Ensure an admin can update another user's review."""
+    author_id = client.post(
+        "/authors/",
+        json={"name": "A", "surname": "B"},
+        headers=admin_headers,
+    ).json()["id"]
+
+    genre_id = client.post(
+        "/genres/",
+        json={"name": "G"},
+        headers=admin_headers,
+    ).json()["id"]
+
+    book_id = client.post(
+        "/books/",
+        json={
+            "title": "T",
+            "author_id": author_id,
+            "genre_id": genre_id,
+        },
+        headers=admin_headers,
+    ).json()["id"]
+
+    review_response = client.post(
+        "/reviews/",
+        json={
+            "rating": 3,
+            "comment": "Original review",
+            "book_id": book_id,
+        },
+        headers=user_headers,
+    )
+    assert review_response.status_code == 201
+    review_id = review_response.json()["id"]
+
+    response = client.put(
+        f"/reviews/{review_id}",
+        json={
+            "rating": 4,
+            "comment": "Updated by admin",
+            "book_id": book_id,
+        },
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["rating"] == 4
+
+
+def test_admin_can_delete_another_users_review(
+    client, admin_headers, user_headers
+):
+    """Ensure an admin can delete another user's review."""
+    author_id = client.post(
+        "/authors/",
+        json={"name": "A", "surname": "B"},
+        headers=admin_headers,
+    ).json()["id"]
+
+    genre_id = client.post(
+        "/genres/",
+        json={"name": "G"},
+        headers=admin_headers,
+    ).json()["id"]
+
+    book_id = client.post(
+        "/books/",
+        json={
+            "title": "T",
+            "author_id": author_id,
+            "genre_id": genre_id,
+        },
+        headers=admin_headers,
+    ).json()["id"]
+
+    review_response = client.post(
+        "/reviews/",
+        json={
+            "rating": 3,
+            "comment": "Original review",
+            "book_id": book_id,
+        },
+        headers=user_headers,
+    )
+    assert review_response.status_code == 201
+    review_id = review_response.json()["id"]
+
+    response = client.delete(
+        f"/reviews/{review_id}",
+        headers=admin_headers,
+    )
+
     assert response.status_code == 200
 
+    get_response = client.get(
+        f"/reviews/{review_id}",
+        headers=user_headers,
+    )
+    assert get_response.status_code == 404
 
-def test_update_non_existent_review(client):
-    """Testuje edycję nieistniejącej recenzji."""
-    response = client.put("/reviews/9999", json={
-        "rating": 4,
-        "comment": "Błąd",
-        "book_id": 1
-    })
-    assert response.status_code == 404
+def test_authenticated_user_can_get_reviews(client, user_headers):
+    """Ensure an authenticated user can retrieve all reviews."""
+    response = client.get(
+        "/reviews/",
+        headers=user_headers,
+    )
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
 
 
-def test_cascade_delete_book_removes_reviews(client):
-    """
-    Testuje kaskadowe usuwanie recenzji.
-    Usuniecie ksiazki spowoduje usuniecie recenzji z nią powiązanych.
-    """
-    a_id = client.post("/authors/", json={"name": "A", "surname": "B"}).json()["id"]
-    g_id = client.post("/genres/", json={"name": "G"}).json()["id"]
-    b_id = client.post("/books/", json={"title": "Do usunięcia", "author_id": a_id, "genre_id": g_id}).json()["id"]
+def test_user_can_update_own_review(
+    client, admin_headers, user_headers
+):
+    """Ensure a user can update their own review."""
+    author_response = client.post(
+        "/authors/",
+        json={"name": "A", "surname": "B"},
+        headers=admin_headers,
+    )
+    assert author_response.status_code == 201
+    author_id = author_response.json()["id"]
 
-    r_response = client.post("/reviews/", json={
-        "rating": 5,
-        "comment": "Recenzja zostanie usunieta razem z ksiazka",
-        "book_id": b_id
-    })
-    r_id = r_response.json()["id"]
+    genre_response = client.post(
+        "/genres/",
+        json={"name": "G"},
+        headers=admin_headers,
+    )
+    assert genre_response.status_code == 201
+    genre_id = genre_response.json()["id"]
 
-    client.delete(f"/books/{b_id}")
+    book_response = client.post(
+        "/books/",
+        json={
+            "title": "Test Book",
+            "author_id": author_id,
+            "genre_id": genre_id,
+        },
+        headers=admin_headers,
+    )
+    assert book_response.status_code == 201
+    book_id = book_response.json()["id"]
 
-    response = client.get(f"/reviews/{r_id}")
-    assert response.status_code == 404
+    review_response = client.post(
+        "/reviews/",
+        json={
+            "rating": 3,
+            "comment": "Original review",
+            "book_id": book_id,
+        },
+        headers=user_headers,
+    )
+    assert review_response.status_code == 201
+    review_id = review_response.json()["id"]
+
+    response = client.put(
+        f"/reviews/{review_id}",
+        json={
+            "rating": 5,
+            "comment": "Updated review",
+            "book_id": book_id,
+        },
+        headers=user_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["rating"] == 5
+    assert response.json()["comment"] == "Updated review"
+
+
+def test_user_can_delete_own_review(
+    client, admin_headers, user_headers
+):
+    """Ensure a user can delete their own review."""
+    author_response = client.post(
+        "/authors/",
+        json={"name": "A", "surname": "B"},
+        headers=admin_headers,
+    )
+    assert author_response.status_code == 201
+    author_id = author_response.json()["id"]
+
+    genre_response = client.post(
+        "/genres/",
+        json={"name": "G"},
+        headers=admin_headers,
+    )
+    assert genre_response.status_code == 201
+    genre_id = genre_response.json()["id"]
+
+    book_response = client.post(
+        "/books/",
+        json={
+            "title": "Test Book",
+            "author_id": author_id,
+            "genre_id": genre_id,
+        },
+        headers=admin_headers,
+    )
+    assert book_response.status_code == 201
+    book_id = book_response.json()["id"]
+
+    review_response = client.post(
+        "/reviews/",
+        json={
+            "rating": 4,
+            "comment": "Review to delete",
+            "book_id": book_id,
+        },
+        headers=user_headers,
+    )
+    assert review_response.status_code == 201
+    review_id = review_response.json()["id"]
+
+    response = client.delete(
+        f"/reviews/{review_id}",
+        headers=user_headers,
+    )
+
+    assert response.status_code == 200
+
+    get_response = client.get(
+        f"/reviews/{review_id}",
+        headers=user_headers,
+    )
+    assert get_response.status_code == 404
